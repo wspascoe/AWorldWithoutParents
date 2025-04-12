@@ -16,7 +16,7 @@ public class InputManager : MonoBehaviour
         {
             controls = new Controls();
             controls.Player.Move.performed += i => MovePosition = i.ReadValue<Vector2>();
-            // controls.Player.Look.performed += i => LookPosition = i.ReadValue<Vector2>();
+             controls.Player.Look.performed += i => LookPosition = i.ReadValue<Vector2>();
             // controls.Player.Jump.performed += i => JumpInput = true;
             // controls.Player.LeftClick.performed += i => LeftClickPressed = true;
             // controls.Player.LeftClick.canceled += i => LeftClickPressed = false;

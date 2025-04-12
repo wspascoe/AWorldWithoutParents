@@ -1,12 +1,15 @@
+using System;
+using System.Security.Cryptography.X509Certificates;
 using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
    
     [Header("Movement Settings")]
-    // [SerializeField] private float walkingSpeed = 2;
+    [SerializeField] private float walkingSpeed = 2;
     [SerializeField] private float runningSpeed = 5;
-    // [SerializeField] private float sprintingSpeed = 6;
+    [Range(0.0f, 0.3f)]
+    public float RotationSmoothTime = 0.12f;
     [SerializeField] private float rotationSpeed = 5;
 
     [Header("Jump Settings")]
@@ -22,34 +25,49 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float groundedRadius = 0.28f;
     [SerializeField] private LayerMask groundLayers;
     
+    [Header("Cinemachine")]
+    public GameObject CinemachineCameraTarget;
+    public float TopClamp = 70.0f;
+    public float BottomClamp = -30.0f;
+    public float CameraAngleOverride = 0.0f;
+    public bool LockCameraPosition = false;
+
+    // cinemachine
+    private float cinemachineTargetYaw;
+    private float cinemachineTargetPitch;
+
     [Header("SFX")]
     [SerializeField] private AudioClip landingAudioClip;
     [SerializeField] private AudioClip[] footstepAudioClips;
     [Range(0, 1)] [SerializeField] private float footstepAudioVolume = 0.5f;
-
-   //Properties
-    public InputManager PlayerInput { get; private set; }
-    public float VerticalMovement { get; private set; }
-    public float HorizontalMovement { get; private set; }
-    public float MoveAmount { get; private set; }
     
+   //Properties
+    InputManager playerInput;
+    public float SpeedChangeRate { get; private set; } = 10.0f;
     private Vector3 moveDirection;
     private bool rotateOnMove = true;
     // timeout deltatime
     private float jumpTimeoutDelta;
     private float fallTimeoutDelta;
-    
+    private float speed;
+    private float animationBlend;
     private float verticalVelocity;
     private float terminalVelocity = 53.0f;
-
+    private float targetRotation = 0.0f;
+    private float rotationVelocity;
+    private const float threshold = 0.01f;
+    
+    
     private CharacterController controller;
     Animator animator;
+    Energy energy;
 
     private void Awake()
     {
-        PlayerInput = GetComponent<InputManager>();
+        playerInput = GetComponent<InputManager>();
         animator = GetComponent<Animator>();
         controller = GetComponent<CharacterController>();
+        energy = GetComponent<Energy>();
     }
 
     private void Start()
@@ -63,27 +81,14 @@ public class PlayerController : MonoBehaviour
     {
         JumpAndGravity();
         GroundedCheck();
-        HandleAllMovement();
+        Move();
     }
 
-    public void HandleAllMovement()
+    private void LateUpdate()
     {
-        
-        HandleGrondedMovement();
-        HandleMovementInput();
-        HandleRotation();
+        CameraRotation();
     }
-    private void GetMovementValues()
-    {
-        VerticalMovement = PlayerInput.MovePosition.y;
-        HorizontalMovement = PlayerInput.MovePosition.x;
-        
-        if (VerticalMovement != 0 || HorizontalMovement != 0)
-        {
-           // GetComponent<ActionScheduler>().StartAction(this);
-        }
-    }
-    
+
     private void GroundedCheck()
     {
         // set sphere position, with offset
@@ -118,10 +123,10 @@ public class PlayerController : MonoBehaviour
                 }
 
                 // Jump
-                if (PlayerInput.JumpInput && jumpTimeoutDelta <= 0.0f)
+                if (playerInput.JumpInput && jumpTimeoutDelta <= 0.0f)
                 {
                    
-                    PlayerInput.JumpInput = false;
+                    playerInput.JumpInput = false;
                     // the square root of H * -2 * G = how much velocity needed to reach desired height
                     verticalVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
                     animator.SetBool(AnimatorParams.Jump, true);
@@ -151,7 +156,7 @@ public class PlayerController : MonoBehaviour
                 }
 
                 // if we are not grounded, do not jump
-                PlayerInput.JumpInput = false;
+                playerInput.JumpInput = false;
             }
 
             // apply gravity over time if under terminal (multiply by delta time twice to linearly speed up over time)
@@ -161,99 +166,108 @@ public class PlayerController : MonoBehaviour
             }
         }
 
-    private void HandleMovementInput()
-    {
-        GetMovementValues();
-        
-        MoveAmount = Mathf.Clamp01(Mathf.Abs(VerticalMovement) + Mathf.Abs(HorizontalMovement));
-
-        if (MoveAmount <= 0.5f && MoveAmount > 0)
+      private void CameraRotation()
         {
-            MoveAmount = 0.5f;
-        }
-        else if (MoveAmount >= 0.5f & MoveAmount <= 1f)
-        {
-            MoveAmount = 1f;
-        }
-        
-        UpdateAnimator(MoveAmount);
-          
-    }
-   
-    private void HandleGrondedMovement()
-    {
-        GetMovementValues();
-        moveDirection = Camera.main.transform.forward * VerticalMovement;
-        moveDirection += Camera.main.transform.right * HorizontalMovement;
-        moveDirection.Normalize();
-        moveDirection.y = 0;
-        
-        // move the player
-        controller.Move(moveDirection * (runningSpeed * Time.deltaTime) +
-            new Vector3(0.0f, verticalVelocity, 0.0f) * Time.deltaTime);
-        
-    }
-    
-    private void HandleRotation()
-    {
-        if (rotateOnMove)
-        {
-            HandleNormalRotation();
-        }
-    }
-
-    private void HandleNormalRotation()
-    {
-            Vector3 targetDirection = Vector3.zero;
-            targetDirection = Camera.main.transform.forward * VerticalMovement;
-            targetDirection += Camera.main.transform.right * HorizontalMovement;
-            targetDirection.Normalize();
-            targetDirection.y = 0;
-                
-            if (targetDirection == Vector3.zero)
+            // if there is an input and camera position is not fixed
+            if (playerInput.LookPosition.sqrMagnitude >= threshold && !LockCameraPosition)
             {
-                targetDirection = transform.forward;
+                cinemachineTargetYaw += playerInput.LookPosition.x;
+                cinemachineTargetPitch += playerInput.LookPosition.y;
             }
-                
-            Quaternion targetRotation = Quaternion.LookRotation(targetDirection);
-            Quaternion rotateCharacter = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
-            transform.rotation = rotateCharacter; 
-    }
-    
-     private void UpdateAnimator(float speed)
-     {
-         animator.SetFloat(AnimatorParams.Speed, speed, 0.1f, Time.deltaTime);
-     }
-
-    public void Cancel()
-    {
+            
+            // clamp our rotations so our values are limited 360 degrees
+            cinemachineTargetYaw = ClampAngle(cinemachineTargetYaw, float.MinValue, float.MaxValue);
+            cinemachineTargetPitch = ClampAngle(cinemachineTargetPitch, BottomClamp, TopClamp);
+            
+            // Cinemachine will follow this target
+            CinemachineCameraTarget.transform.rotation = Quaternion.Euler(cinemachineTargetPitch + CameraAngleOverride,
+                cinemachineTargetYaw, 0.0f);
+        }
         
-    }
-
-    public void SetRotateOnMove(bool value)
-    {
-        rotateOnMove = value;
-    }
-    #region Animation Events
-    private void OnFootstep(AnimationEvent animationEvent)
-    {
-        if (animationEvent.animatorClipInfo.weight > 0.5f)
+        private static float ClampAngle(float lfAngle, float lfMin, float lfMax)
         {
-            if (footstepAudioClips.Length > 0)
+            if (lfAngle < -360f) lfAngle += 360f;
+            if (lfAngle > 360f) lfAngle -= 360f;
+            return Mathf.Clamp(lfAngle, lfMin, lfMax);
+        }
+        private void Move()
+        {
+            float targetSpeed = energy.Amount >= 30 ? runningSpeed : walkingSpeed;
+            
+            if (playerInput.MovePosition == Vector2.zero) targetSpeed = 0.0f;
+
+            // a reference to the players current horizontal velocity
+            float currentHorizontalSpeed = new Vector3(controller.velocity.x, 0.0f, controller.velocity.z).magnitude;
+
+            float speedOffset = 0.1f;
+
+            // accelerate or decelerate to target speed
+            if (currentHorizontalSpeed < targetSpeed - speedOffset ||
+                currentHorizontalSpeed > targetSpeed + speedOffset)
             {
-                var index = Random.Range(0, footstepAudioClips.Length);
-                AudioSource.PlayClipAtPoint(footstepAudioClips[index], transform.TransformPoint(controller.center), footstepAudioVolume);
-            }
-        }
-    }
+                // creates curved result rather than a linear one giving a more organic speed change
+                // note T in Lerp is clamped, so we don't need to clamp our speed
+                speed = Mathf.Lerp(currentHorizontalSpeed, targetSpeed,
+                    Time.deltaTime * SpeedChangeRate);
 
-    private void OnLand(AnimationEvent animationEvent)
-    {
-        if (animationEvent.animatorClipInfo.weight > 0.5f)
-        {
-            AudioSource.PlayClipAtPoint(landingAudioClip, transform.TransformPoint(controller.center), footstepAudioVolume);
+                // round speed to 3 decimal places
+                speed = Mathf.Round(speed * 1000f) / 1000f;
+            }
+            else
+            {
+                speed = targetSpeed;
+            }
+
+            animationBlend = Mathf.Lerp(animationBlend, targetSpeed, Time.deltaTime * SpeedChangeRate);
+            if (animationBlend < 0.01f) animationBlend = 0f;
+
+            // normalise input direction
+            Vector3 inputDirection = new Vector3(playerInput.MovePosition.x, 0.0f, playerInput.MovePosition.y).normalized;
+
+            //note: Vector2's != operator uses approximation so is not floating point error prone, and is cheaper than magnitude
+           // if there is a move input rotate player when the player is moving
+            if (playerInput.MovePosition != Vector2.zero)
+            {
+                targetRotation = Mathf.Atan2(inputDirection.x, inputDirection.z) * Mathf.Rad2Deg +
+                                  Camera.main.transform.eulerAngles.y;
+                float rotation = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetRotation, ref rotationVelocity,
+                    RotationSmoothTime);
+            
+                // rotate to face input direction relative to camera position
+                transform.rotation = Quaternion.Euler(0.0f, rotation, 0.0f);
+            }
+            
+
+            Vector3 targetDirection = Quaternion.Euler(0.0f, targetRotation, 0.0f) * Vector3.forward;
+
+            // move the player
+            controller.Move(targetDirection.normalized * (speed * Time.deltaTime) +
+                            new Vector3(0.0f, verticalVelocity, 0.0f) * Time.deltaTime);
+            
+            animator.SetFloat(AnimatorParams.Speed, animationBlend);
+           
         }
-    }
     
-    #endregion
+    // #region Animation Events
+    // private void OnFootstep(AnimationEvent animationEvent)
+    // {
+    //     if (animationEvent.animatorClipInfo.weight > 0.5f)
+    //     {
+    //         if (footstepAudioClips.Length > 0)
+    //         {
+    //             var index = Random.Range(0, footstepAudioClips.Length);
+    //             AudioSource.PlayClipAtPoint(footstepAudioClips[index], transform.TransformPoint(controller.center), footstepAudioVolume);
+    //         }
+    //     }
+    // }
+    //
+    // private void OnLand(AnimationEvent animationEvent)
+    // {
+    //     if (animationEvent.animatorClipInfo.weight > 0.5f)
+    //     {
+    //         AudioSource.PlayClipAtPoint(landingAudioClip, transform.TransformPoint(controller.center), footstepAudioVolume);
+    //     }
+    // }
+    //
+    // #endregion
 }
