@@ -192,7 +192,8 @@ public class PlayerController : MonoBehaviour
         }
         private void Move()
         {
-            float targetSpeed = energy.Amount >= 30 ? runningSpeed : walkingSpeed;
+            bool canRun = playerInput.RunInput && energy.Amount >= 30;
+            float targetSpeed = canRun ? runningSpeed : walkingSpeed;
             
             if (playerInput.MovePosition == Vector2.zero) targetSpeed = 0.0f;
 
@@ -243,7 +244,10 @@ public class PlayerController : MonoBehaviour
             // move the player
             controller.Move(targetDirection.normalized * (speed * Time.deltaTime) +
                             new Vector3(0.0f, verticalVelocity, 0.0f) * Time.deltaTime);
-            
+            if (canRun)
+            {
+                energy.UseEnergy(Time.deltaTime);
+            }
             animator.SetFloat(AnimatorParams.Speed, animationBlend);
            
         }
