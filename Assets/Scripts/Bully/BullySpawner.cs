@@ -11,7 +11,8 @@ public class BullySpawner : MonoBehaviour
     {
         if (other.CompareTag("Player"))
         {
-            Instantiate(bully, spawnPosition.position, Quaternion.identity);
+            BullyController bullyInstance = Instantiate(bully, spawnPosition.position, Quaternion.identity);
+            bullyInstance.Chase();
         }
     }
 

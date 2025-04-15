@@ -1,0 +1,37 @@
+Game Jam Ends April 23th
+
+Bully 
+-Need to work on scare
+-Need to decide what happens to player when they interact
+-How long to they have to out run him
+
+
+Scene
+-Scene loader to playground and back to main scene
+-Need to be able to persist energy accumulated
+-might need a singleton player
+
+
+Marc Quest
+-implement a simple quest type system
+-Book is located by house
+-Character has been created
+
+Dialog System
+-Created dialog display
+-Tie to quest system
+-make dialog for game start about going to playground
+-start has a little background
+
+Emotions
+-Tie into bully
+-make it so they last a certain amount of time then go back to normal
+
+Bully Zones
+-maybe hae them turn on after player leaves playground
+
+Travel
+-maybe have some way to tell player how to get to playground and Marc's house
+-probably tie into quest system
+
+	

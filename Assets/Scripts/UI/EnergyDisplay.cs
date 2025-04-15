@@ -18,7 +18,6 @@ public class EnergyDisplay : MonoBehaviour
    private void UpdateEnergyBar()
    {
       energyBar.fillAmount = energy.Amount / 100;
-      Debug.Log("Energy Display: " + energy.Amount);
-      Debug.Log("Fill: " + energyBar.fillAmount);
+     
    }
 }

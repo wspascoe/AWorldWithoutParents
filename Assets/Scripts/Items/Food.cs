@@ -39,7 +39,8 @@ public class Food : Item
         if (chanceCount == count)
         {
             count = 0;
-            consumer.GetComponent<Emotions>().TriggerEmotion(FacialEmotions.Disgust);
+            Emotions emotions = consumer.GetComponent<Emotions>();
+            emotions.StartCoroutine(emotions.TriggerEmotion(FacialEmotions.Disgust));
             Energy energy = consumer.GetComponent<Energy>();
             energy.UseEnergy(energy.Amount / 2);
         }

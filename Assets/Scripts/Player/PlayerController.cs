@@ -1,6 +1,7 @@
 using System;
 using System.Security.Cryptography.X509Certificates;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class PlayerController : MonoBehaviour
 {
@@ -30,12 +31,12 @@ public class PlayerController : MonoBehaviour
     public float TopClamp = 70.0f;
     public float BottomClamp = -30.0f;
     public float CameraAngleOverride = 0.0f;
-    public bool LockCameraPosition = false;
-
+    public bool IsCameraLocked = false;
+    
     // cinemachine
     private float cinemachineTargetYaw;
     private float cinemachineTargetPitch;
-
+    private bool questPos = false;
     [Header("SFX")]
     [SerializeField] private AudioClip landingAudioClip;
     [SerializeField] private AudioClip[] footstepAudioClips;
@@ -88,7 +89,6 @@ public class PlayerController : MonoBehaviour
     {
         CameraRotation();
     }
-
     private void GroundedCheck()
     {
         // set sphere position, with offset
@@ -104,14 +104,10 @@ public class PlayerController : MonoBehaviour
    
      private void JumpAndGravity()
         {
-           
             if (grounded)
             {
-                
                 // reset the fall timeout timer
                 fallTimeoutDelta = fallTimeout;
-
-               
                 animator.SetBool(AnimatorParams.Jump, false);
                 animator.SetBool(AnimatorParams.FreeFall, false);
                 
@@ -169,7 +165,7 @@ public class PlayerController : MonoBehaviour
       private void CameraRotation()
         {
             // if there is an input and camera position is not fixed
-            if (playerInput.LookPosition.sqrMagnitude >= threshold && !LockCameraPosition)
+            if (playerInput.LookPosition.sqrMagnitude >= threshold && !IsCameraLocked)
             {
                 cinemachineTargetYaw += playerInput.LookPosition.x;
                 cinemachineTargetPitch += playerInput.LookPosition.y;
@@ -182,6 +178,7 @@ public class PlayerController : MonoBehaviour
             // Cinemachine will follow this target
             CinemachineCameraTarget.transform.rotation = Quaternion.Euler(cinemachineTargetPitch + CameraAngleOverride,
                 cinemachineTargetYaw, 0.0f);
+            
         }
         
         private static float ClampAngle(float lfAngle, float lfMin, float lfMax)
