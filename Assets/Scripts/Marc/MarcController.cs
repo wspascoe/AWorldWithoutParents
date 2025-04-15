@@ -8,6 +8,7 @@ public class MarcController : MonoBehaviour
     [SerializeField] private float talkDistance = 3f;
     [SerializeField] CinemachineVirtualCamera marcCamera;
     [SerializeField] private DialogDisplay dialogText;
+    [SerializeField] private Transform marcMission;
     private Transform player;
     private PlayerController playerController;
     private void Start()
@@ -15,6 +16,7 @@ public class MarcController : MonoBehaviour
         marcCamera.enabled = false;
         player = GameObject.FindGameObjectWithTag("Player").transform;
         playerController = player.GetComponent<PlayerController>();
+        marcMission.gameObject.SetActive(false);
     }
 
     private void Update()
@@ -40,6 +42,9 @@ public class MarcController : MonoBehaviour
     {
         marcCamera.enabled = false;
         playerController.IsCameraLocked = false;
+        playerController.StartCoroutine(playerController.TalkAboutMarc());
+        marcMission.gameObject.SetActive(true);
+        playerController.PlaygroundMission.gameObject.SetActive(false);
     }
 
     private void OnDrawGizmos()

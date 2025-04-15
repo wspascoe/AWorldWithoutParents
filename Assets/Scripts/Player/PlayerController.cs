@@ -1,10 +1,14 @@
 using System;
+using System.Collections;
 using System.Security.Cryptography.X509Certificates;
 using UnityEngine;
 using UnityEngine.Serialization;
 
 public class PlayerController : MonoBehaviour
 {
+    
+    [SerializeField] private DialogDisplay dialogText;
+    public Transform PlaygroundMission;
    
     [Header("Movement Settings")]
     [SerializeField] private float walkingSpeed = 2;
@@ -76,6 +80,8 @@ public class PlayerController : MonoBehaviour
         // reset our timeouts on start
         jumpTimeoutDelta = jumpTimeout;
         fallTimeoutDelta = fallTimeout;
+
+        StartCoroutine(TalkAboutPlayground());
     }
 
     private void Update()
@@ -247,6 +253,35 @@ public class PlayerController : MonoBehaviour
             }
             animator.SetFloat(AnimatorParams.Speed, animationBlend);
            
+        }
+        
+        public IEnumerator TalkAboutPlayground()
+        {
+            yield return new WaitForSeconds(3f);
+            dialogText.Display("We are on our way to the playground to see our buddy Marc.");
+            yield return new WaitForSeconds(5f);
+            dialogText.Display("");
+            dialogText.Display("If we follow the arrows it will show us the way");
+            yield return new WaitForSeconds(5f);
+            dialogText.Display("");
+            dialogText.Display("Remember we need to stock up on energy to avoid those bullies");
+            yield return new WaitForSeconds(5f);
+            dialogText.ResetDisplay();
+            
+        }
+        public IEnumerator TalkAboutMarc()
+        {
+            yield return new WaitForSeconds(4f);
+            dialogText.Display("Marc Lives at the end of the same street I do Polygon Pl.");
+            yield return new WaitForSeconds(5f);
+            dialogText.Display("");
+            dialogText.Display("Knowing Marc it probably fell out of his backpack and on the driveway.");
+            yield return new WaitForSeconds(5f);
+            dialogText.Display("");
+            dialogText.Display("We had better stock up on energy before we run into any bullies");
+            yield return new WaitForSeconds(5f);
+            dialogText.ResetDisplay();
+            
         }
     
     // #region Animation Events
