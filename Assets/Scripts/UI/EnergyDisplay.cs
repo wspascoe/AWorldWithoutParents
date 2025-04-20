@@ -13,6 +13,7 @@ public class EnergyDisplay : MonoBehaviour
       energy = GameObject.FindGameObjectWithTag("Player").GetComponent<Energy>();
       energy.OnEnergyChanged += UpdateEnergyBar;
       energyBar.fillAmount = 0;
+      UpdateEnergyBar();
    }
 
    private void UpdateEnergyBar()

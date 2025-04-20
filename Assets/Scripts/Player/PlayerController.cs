@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Security.Cryptography.X509Certificates;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.Serialization;
 
 public class PlayerController : MonoBehaviour
@@ -29,7 +30,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float groundedOffset = -0.14f;
     [SerializeField] private float groundedRadius = 0.28f;
     [SerializeField] private LayerMask groundLayers;
-    
+    [SerializeField] private int WinScene = 2;
     [Header("Cinemachine")]
     public GameObject CinemachineCameraTarget;
     public float TopClamp = 70.0f;
@@ -206,21 +207,21 @@ public class PlayerController : MonoBehaviour
             float speedOffset = 0.1f;
 
             // accelerate or decelerate to target speed
-            if (currentHorizontalSpeed < targetSpeed - speedOffset ||
-                currentHorizontalSpeed > targetSpeed + speedOffset)
-            {
-                // creates curved result rather than a linear one giving a more organic speed change
-                // note T in Lerp is clamped, so we don't need to clamp our speed
-                speed = Mathf.Lerp(currentHorizontalSpeed, targetSpeed,
-                    Time.deltaTime * SpeedChangeRate);
-
-                // round speed to 3 decimal places
-                speed = Mathf.Round(speed * 1000f) / 1000f;
-            }
-            else
-            {
+            // if (currentHorizontalSpeed < targetSpeed - speedOffset ||
+            //     currentHorizontalSpeed > targetSpeed + speedOffset)
+            // {
+            //     // creates curved result rather than a linear one giving a more organic speed change
+            //     // note T in Lerp is clamped, so we don't need to clamp our speed
+            //     speed = Mathf.Lerp(currentHorizontalSpeed, targetSpeed,
+            //         Time.deltaTime * SpeedChangeRate);
+            //
+            //     // round speed to 3 decimal places
+            //     speed = Mathf.Round(speed * 1000f) / 1000f;
+            // }
+            // else
+            // {
                 speed = targetSpeed;
-            }
+           // }
 
             animationBlend = Mathf.Lerp(animationBlend, targetSpeed, Time.deltaTime * SpeedChangeRate);
             if (animationBlend < 0.01f) animationBlend = 0f;
@@ -244,9 +245,10 @@ public class PlayerController : MonoBehaviour
 
             Vector3 targetDirection = Quaternion.Euler(0.0f, targetRotation, 0.0f) * Vector3.forward;
 
+           
             // move the player
-            controller.Move(targetDirection.normalized * (speed * Time.deltaTime) +
-                            new Vector3(0.0f, verticalVelocity, 0.0f) * Time.deltaTime);
+            controller.Move(targetDirection.normalized * (speed * Time.deltaTime)); 
+                           //+ new Vector3(0.0f, verticalVelocity, 0.0f) * Time.deltaTime);
             if (canRun)
             {
                 energy.UseEnergy(Time.deltaTime);
@@ -282,6 +284,17 @@ public class PlayerController : MonoBehaviour
             yield return new WaitForSeconds(5f);
             dialogText.ResetDisplay();
             
+        }
+
+        public void OnWin()
+        {
+            StartCoroutine(GotoWinScene());
+        }
+
+        private IEnumerator GotoWinScene()
+        {
+            yield return new WaitForSeconds(3f);
+            SceneManager.LoadScene(WinScene);
         }
     
     // #region Animation Events
