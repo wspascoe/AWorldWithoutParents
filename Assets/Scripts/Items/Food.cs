@@ -29,7 +29,6 @@ public class Food : Item
         seed = Environment.TickCount;
         random = new Random(seed);
         int chance = random.Next(0, 100);
-        Debug.Log("Stomach chance: " + chance);
         
         if (chance < chanceStomachAche)
         {

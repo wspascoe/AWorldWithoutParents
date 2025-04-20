@@ -10,7 +10,6 @@ public class Energy : MonoBehaviour
    public void AddEnergy(float amount)
    {
       energyAmount += amount;
-      Debug.Log("Energy: " + energyAmount);
       OnEnergyChanged?.Invoke();
    }
 
